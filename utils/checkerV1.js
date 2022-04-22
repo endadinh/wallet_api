@@ -35,4 +35,4 @@ class TransactionChecker {
 let txChecker = new TransactionChecker(holderAddress);
 setInterval(() => {
     txChecker.checkBlock()
-}, 1000);
+}, 5*6000);
