@@ -299,8 +299,8 @@ class Wallet {
                 let BalanceBNB = await this.web3.utils.fromWei(BNBBalanceBN, "ether");
                 let BalanceGet = await this.contract.methods.balanceOf(address).call();
                 let balanceBN = new this.bigNumber(BalanceGet);
-                let balanceAFT = balanceBN.div(this.divisor).toString();
-                return { code: 200, BalanceBNB: Number(BalanceBNB).toFixed(6), BalanceAFT: Number(balanceAFT).toFixed(6) };
+                let balanceToken = balanceBN.div(this.divisor).toString();
+                return { code: 200, BalanceBNB: Number(BalanceBNB).toFixed(6), BalanceToken: Number(balanceToken).toFixed(6) };
             }
             else {
                 return { code: 500, Error: 'Require Network' };
@@ -311,7 +311,7 @@ class Wallet {
             return { code: 500, error: "Can't get balance, maybe you requested wrong network" };
         }
     }
-    async getTransaction(network, address) {
+    async getTransaction(network, address, tokenAddress) {
         try {
             if (Number(network) === 1) {
                 const rpc = await this.checkNetwork(Number(network));
@@ -321,10 +321,26 @@ class Wallet {
                     let startBlock = 0;
                     let offset = 10;
                     let data = await axios.get(`https://api.bscscan.com/api?module=account&action=txlist&address=${address}&startblock=${startBlock}&endblock=${latestBlock}&page=1&offset=${offset}&sort=desc&apikey=${API_KEY}`)
-                    return { code: 200, txs: data.data.result };
+                    let data1 = await axios.get(`https://api.bscscan.com/api?module=account&action=tokentx&contractaddress=${tokenAddress}&address=${address}&page=1&offset=${offset}&startblock=${startBlock}&endblock=${latestBlock}&sort=desc&apikey=${API_KEY}`);
+                    return { code: 200, txsBEP20: data1.data.result, txsList: data.data.result };
                 }
                 else {
-                    return { code: 500, Error: 'Only Mainnet for this request' };
+                    return { code: 500, Error: 'Require Network' };
+                }
+            }
+            else if (Number(network) === 0) {
+                const rpc = await this.checkNetwork(Number(network));
+                if (rpc != "") {
+                    this.web3 = await new Web3(new Web3.providers.HttpProvider(rpc));
+                    let latestBlock = await this.web3.eth.getBlockNumber();
+                    let startBlock = 0;
+                    let offset = 10;
+                    let data = await axios.get(`https://api-testnet.bscscan.com/api?module=account&action=txlist&address=${address}&startblock=${startBlock}&endblock=${latestBlock}&page=1&offset=${offset}&sort=desc&apikey=${API_KEY}`)
+                    let data1 = await axios.get(`https://api-testnet.bscscan.com/api?module=account&action=tokentx&contractaddress=${tokenAddress}&address=${address}&page=1&offset=${offset}&startblock=${startBlock}&endblock=${latestBlock}&sort=desc&apikey=${API_KEY}`);
+                    return { code: 200, txsBEP20: data1.data.result, txsList: data.data.result };
+                }
+                else {
+                    return { code: 500, Error: 'Require Network' };
                 }
             }
             else {
@@ -352,8 +368,8 @@ class Wallet {
                     chainId: this.web3.eth.getChainId(), // Used to prevent transaction reuse across blockchains. Auto-filled by MetaMask.
                 }, privateKey)
                 if (txSigned.rawTransaction) {
-                    let txsInfo = await this.web3.eth.sendSignedTransaction(txSigned.rawTransaction);
-                    return { txsInfo };
+                    let txs = await this.web3.eth.sendSignedTransaction(txSigned.rawTransaction);
+                    return {code:200, txsInfo: txs };
                 }
                 else {
                     return { Fail: "Can't sign transaction !" }
@@ -370,7 +386,7 @@ class Wallet {
 
 
     async sendToken(network, sendAddress, privateKey, recipient, value, tokenAddress) {
-        try { 
+        try {
             const rpc = await this.checkNetwork(Number(network));
             if (rpc != "") {
                 this.web3 = await new Web3(new Web3.providers.HttpProvider(rpc));
@@ -378,7 +394,7 @@ class Wallet {
                 this.contract = await new this.web3.eth.Contract(ABIJson, tokenAddress);
                 let tokenDecimals = await this.contract.methods['decimals']().call();
                 let calNumber = value * 10 ** tokenDecimals;
-                let number = new this.bigNumber(calNumber.toLocaleString('fullwide', {useGrouping:false}));
+                let number = new this.bigNumber(calNumber.toLocaleString('fullwide', { useGrouping: false }));
                 let data = await this.contract.methods['transfer'](recipient, this.web3.utils.toHex(number)).encodeABI();
                 let gas = await this.web3.eth.getGasPrice();
                 let txSigned = await this.web3.eth.accounts.signTransaction({
@@ -389,10 +405,10 @@ class Wallet {
                     data: data,
                     chainId: this.web3.eth.getChainId(), // Used to prevent transaction reuse across blockchains. Auto-filled by MetaMask.
                 }, privateKey)
-                console.log('txSigned',txSigned);
+                console.log('txSigned', txSigned);
                 if (txSigned.rawTransaction) {
-                    let txsInfo = await this.web3.eth.sendSignedTransaction(txSigned.rawTransaction);
-                    return { txsInfo };
+                    let txs = await this.web3.eth.sendSignedTransaction(txSigned.rawTransaction);
+                    return {code:200, txsInfo: txs };
                 }
                 else {
                     return { Fail: "Can't sign transaction !" }
@@ -402,8 +418,8 @@ class Wallet {
                 return { code: 500, Error: 'Require Network' };
             }
         }
-        catch(err) { 
-            return {code:500, Error: err}
+        catch (err) {
+            return { code: 500, Error: err }
         }
     }
 

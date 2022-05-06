@@ -5,6 +5,52 @@ const response = require('../utils/response');
 const walletClass = new Wallet();
 
 
+/**
+ * @swagger
+ *components: 
+ *   schemas: 
+ *     AccountResponse: 
+ *       type: object
+ *       properties: 
+ *         code: 
+ *           type: number
+ *         account: 
+ *           type: object
+ *     BalanceResponse: 
+ *       type: object
+ *       properties: 
+ *         code: 
+ *           type: number
+ *         BalanceBNB: 
+ *           type: string
+ *         BalanceToken:
+ *           type: string
+ *     ValidResponse: 
+ *       type: object
+ *       properties: 
+ *         code: 
+ *           type: number
+ *         isValid: 
+ *           type: boolean
+ *     HistoryTx: 
+ *       type: object
+ *       properties: 
+ *         code: 
+ *           type: number
+ *         txsBep20: 
+ *           type: object
+ *         txsList:
+ *           type: object 
+ *     TransactionResponse: 
+ *       type: object
+ *       properties: 
+ *         code: 
+ *           type: number
+ *         TxsInfo:
+ *           type: object         
+ */
+
+
 
 /**
  * @swagger
@@ -38,7 +84,18 @@ const walletClass = new Wallet();
 *         type: number
 *     responses:
 *       200:
-*         description: Account created
+*         description: Return new generated address and privateKey
+*         content: 
+*             text/plain: 
+*               schema: 
+*                 $ref: "#/components/schemas/AccountResponse"
+*             application/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/AccountResponse"
+*             text/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/AccountResponse"
+*           
 */
 
 api_router.get('/create', async (req, res) => {
@@ -70,6 +127,16 @@ api_router.get('/create', async (req, res) => {
  *     responses:
  *       200:
  *         description: Check valid address
+ *         content: 
+*             text/plain: 
+*               schema: 
+*                 $ref: "#/components/schemas/ValidResponse"
+*             application/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/ValidResponse"
+*             text/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/ValidResponse"
  */
 
 api_router.post('/valid', async (req, res) => {
@@ -114,6 +181,16 @@ api_router.post('/valid', async (req, res) => {
  *     responses:
  *       200:
  *         description: Balance by address
+ *         content: 
+*             text/plain: 
+*               schema: 
+*                 $ref: "#/components/schemas/BalanceResponse"
+*             application/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/BalanceResponse"
+*             text/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/BalanceResponse"
  */
 
 api_router.post('/balance', async (req, res) => {
@@ -122,7 +199,7 @@ api_router.post('/balance', async (req, res) => {
     const tokenAddress = req.query.tokenAddress;
     console.log(address);
 
-    let result = await walletClass.getBalance(network,address,tokenAddress);
+    let result = await walletClass.getBalance(network, address, tokenAddress);
     res.send(JSON.stringify(result));
 })
 
@@ -146,17 +223,33 @@ api_router.post('/balance', async (req, res) => {
  *         in: query
  *         required: true
  *         type: string
+ *       - name: tokenAddress
+ *         description: Address of token to get Txs.
+ *         in: query
+ *         required: true
+ *         type: string
  *     responses:
  *       200:
- *         description: TXS
+ *         description: Transaction info
+ *         content: 
+*             text/plain: 
+*               schema: 
+*                 $ref: "#/components/schemas/HistoryTx"
+*             application/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/HistoryTx"
+*             text/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/HistoryTx"
  */
 
 
 api_router.post('/get-transactions', async (req, res) => {
     try {
+        const tokenAddress = req.query.tokenAddress
         const network = req.query.network
         const address = req.query.address;
-        let result = await walletClass.getTransaction(network,address);
+        let result = await walletClass.getTransaction(network, address, tokenAddress);
         res.send(JSON.stringify(result));
 
     }
@@ -223,7 +316,17 @@ api_router.post('/get-transactions', async (req, res) => {
  *         type: number
  *     responses:
  *       200:
- *         description: TXS
+ *         description: Transaction Info,
+ *         content: 
+*             text/plain: 
+*               schema: 
+*                 $ref: "#/components/schemas/TransactionResponse"
+*             application/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/TransactionResponse"
+*             text/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/TransactionResponse"
  */
 
 
@@ -234,7 +337,7 @@ api_router.post('/send-bnb', async (req, res) => {
         const recipient = req.query.recipient;
         const privateKey = req.query.privateKey;
         const value = req.query.value;
-        let result = await walletClass.sendBNB(network,sendAddress, privateKey, recipient, value);
+        let result = await walletClass.sendBNB(network, sendAddress, privateKey, recipient, value);
         console.log(result);
         res.send(JSON.stringify(result));
     }
@@ -284,7 +387,17 @@ api_router.post('/send-bnb', async (req, res) => {
  *         type: string
  *     responses:
  *       200:
- *         description: TXS
+ *         description: Transaction Info
+ *         content: 
+*             text/plain: 
+*               schema: 
+*                 $ref: "#/components/schemas/TransactionResponse"
+*             application/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/TransactionResponse"
+*             text/json: 
+*               schema: 
+*                 $ref: "#/components/schemas/TransactionResponse"
  */
 
 api_router.post('/send-token', async (req, res) => {
@@ -295,7 +408,7 @@ api_router.post('/send-token', async (req, res) => {
         const privateKey = req.query.privateKey;
         const value = req.query.value;
         const tokenAddress = req.query.tokenAddress;
-        let result = await walletClass.sendToken(network,sendAddress, privateKey, recipient, value, tokenAddress);
+        let result = await walletClass.sendToken(network, sendAddress, privateKey, recipient, value, tokenAddress);
         console.log(result);
         res.send(JSON.stringify(result));
 
