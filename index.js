@@ -10,8 +10,10 @@ const api_router = require('./routes/api');
 
 require('dotenv').config()
 
+const app = express();
+app.use(cors());
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8090;
 
 
 const options = { 
@@ -25,7 +27,7 @@ const options = {
         },
         servers: [
             { 
-                url: "http://localhost:3000",
+                url: "http://128.199.134.155:8090/",
 
             }
         ]
@@ -36,11 +38,9 @@ const options = {
 const specs = swaggerJsDoc(options);
 
 
-const app = express();
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(bodyParser.urlencoded({ extended: true }))
